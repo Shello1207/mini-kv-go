@@ -1,0 +1,20 @@
+# binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# test
+*.test
+*.out
+
+# IDE
+.vscode/
+.idea/
+
+# local data
+data/
+
+# logs
+*.log
