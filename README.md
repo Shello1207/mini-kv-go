@@ -19,9 +19,9 @@
 go run ./cmd/server
 
 ## Example
-curl -X PUT http://localhost:8080/kv/name -d "alice"
-curl http://localhost:8080/kv/name
-curl -X DELETE http://localhost:8080/kv/name
+- curl -X PUT http://localhost:8080/kv/name -d "alice"
+- curl http://localhost:8080/kv/name
+- curl -X DELETE http://localhost:8080/kv/name
 
 ## Roadmap
 - [x] In-memory KV
