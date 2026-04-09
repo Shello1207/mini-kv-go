@@ -10,10 +10,10 @@
 - HTTP API
 
 ## API
-PUT /kv/{key}
-GET /kv/{key}
-DELETE /kv/{key}
-GET /health
+- PUT /kv/{key}
+- GET /kv/{key}
+- DELETE /kv/{key}
+- GET /health
 
 ## Quick Start
 go run ./cmd/server
