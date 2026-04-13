@@ -2,6 +2,7 @@ package wal
 
 import (
 	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -88,5 +89,69 @@ func TestWAL_ReplayEmptyFile(t *testing.T) {
 	}
 	if count != 0 {
 		t.Fatalf("expected no records, got=%d", count)
+	}
+}
+
+func TestWAL_SegmentedLog(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "wal.log")
+
+	// 创建一个小的maxSize来触发分段
+	w, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	w.maxSize = 100 // 设置小的大小限制来触发分段
+
+	// 写入足够多的数据来触发分段
+	for i := 0; i < 10; i++ {
+		key := fmt.Sprintf("key-%d", i)
+		value := []byte(fmt.Sprintf("value-%d", i))
+		if err1 := w.AppendPut(key, value); err1 != nil {
+			t.Fatalf("AppendPut failed: %v", err1)
+		}
+	}
+
+	if err2 := w.Close(); err2 != nil {
+		t.Fatalf("Close failed: %v", err2)
+	}
+
+	// 重新打开并回放所有分段文件
+	w2, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open second wal failed: %v", err)
+	}
+	defer w2.Close()
+
+	var records []Record
+	err = w2.Replay(func(rec Record) error {
+		records = append(records, rec)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Replay failed: %v", err)
+	}
+
+	// 验证所有记录都被正确回放
+	if len(records) != 10 {
+		t.Fatalf("unexpected record count: got=%d want=%d", len(records), 10)
+	}
+
+	// 验证记录的顺序和内容
+	for i, rec := range records {
+		expectedKey := fmt.Sprintf("key-%d", i)
+		expectedValue := fmt.Sprintf("value-%d", i)
+
+		if rec.Op != OpPut || rec.Key != expectedKey {
+			t.Fatalf("unexpected record at index %d: %+v", i, rec)
+		}
+
+		val, err := base64.StdEncoding.DecodeString(rec.Value)
+		if err != nil {
+			t.Fatalf("decode base64 failed: %v", err)
+		}
+		if string(val) != expectedValue {
+			t.Fatalf("unexpected decoded value at index %d: got=%q want=%q", i, string(val), expectedValue)
+		}
 	}
 }
